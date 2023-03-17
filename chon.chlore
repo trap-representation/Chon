@@ -1,0 +1,137 @@
+;    Chon is a POSIX compliant (IEEE Std 1003.1-2017) implementation of the cat utility
+;    Copyright (C) 2023  Somdipto Chakraborty
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import "stdlib.chlore"
+import "io.chlore"
+import "alloc2.chlore"
+;import "/usr/local/include/memchk.chlore" ;uncomment this line and comment out the previous line to use the allocator provided by the `memchk' library instead of the one that's provided by the standard library for detecting memory leaks
+import "stddef.chlore"
+import "string.chlore"
+
+set BUF_SIZE 1
+
+:stdout_write_failure
+  pushp "[Chon]: failed to write to stdout\n" pushp putstre call
+  pop pop
+  pushi 1 swap ret
+
+:read_failure
+  pop
+  pushp "[Chon]: failed to read from file desriptor %d\n" pushp putstre call
+  pushi 1 swap ret
+
+:chon_input
+  swap
+
+  :read_loop
+    dup
+    pushp readcharf call
+    get0 pushi -1 pushp read_failure jeq ;check if the read was successful
+    get0 pushi 0 pushp read_loop_end jeq
+
+    pushi STDOUT swap pushp writecharf call
+    get0 pushi -1 pushp stdout_write_failure jeq
+
+    pushp read_loop jmp
+
+    :read_loop_end
+      pop pop
+
+  pushi 0
+  swap ret
+
+set MAX_PATHSIZE 4097
+
+:main
+  pushi 2
+  pushp getargc call
+  pushp chon_stdin_and_quit jls
+  pushp chon_args jmp
+
+  :chon_stdin_and_quit
+    pushi STDIN
+    pushp chon_input call
+    hltr
+
+  :chon_args
+    pushui MAX_PATHSIZE
+    pushp aseg call
+    get0 pushp chon_args_allocation_failure jnz
+    pushp read_args jmp
+
+    :chon_args_allocation_failure
+      pushp "[Chon]: allocation failure\n" pushp putstre call
+      pushp mem_close
+      pushi 1
+      hltr
+
+    :read_args
+      pushi 1
+
+      :read_args_loop
+        pushp getargc call over pushp read_args_loop_end jeq
+        over over pushui MAX_PATHSIZE pushp getargv call
+
+        over pushp "-u" pushp strcmp call pushi 0 pushp read_next_arg jeq
+        over pushp "-" pushp strcmp call pushi 0 pushp read_stdin jeq
+        pushp read_arg jmp
+
+        :read_stdin
+        pushi STDIN dup
+        pushp chon_file jmp
+
+        :read_arg
+          over
+          pushi O_RDONLY
+          pushp openf call
+          dup pushi -1 pushp open_failure jeq
+          dup
+          pushp chon_file jmp
+
+          :open_failure
+            pop pop
+            dup
+            pushp "[Chon]: failed to open `%t' for reading\n" pushp putfmte call
+            pushp flush call
+            pushp mem_close call
+            pushi 1 hltr
+
+        :chon_file
+          pushp chon_input call
+          swap dup pushi STDIN pushp close_file jne
+          pop
+          pushi 1 pushp chon_quit_err jeq
+          pushp read_next_arg jmp
+
+          :close_file
+            pushp closef call
+            pushi 1 pushp chon_quit_err jeq
+            pushp read_next_arg jmp
+
+          :chon_quit_err
+            pop
+            pushp flush call
+            pushp mem_close call
+            pushi 1 hltr
+
+        :read_next_arg
+          pushi 1 addi pushp read_args_loop jmp
+
+      :read_args_loop_end
+        pop
+        pushp flush call
+        pushp mem_close call
+        hlt
