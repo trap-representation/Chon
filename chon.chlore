@@ -83,7 +83,7 @@ set BUF_SIZE 4096
     get0 pushi -1 pushp read_failure_buf jeq ;check if the read was successful
     get0 pushi 0 pushp read_loop_end_buf jeq
 
-    pushi STDOUT over pushui BUF_SIZE pushp writef call
+    pushi STDOUT over get0 pushp writef call
     get0 pushi -1 pushp stdout_write_failure_buf jeq
 
     pushp read_loop_buf jmp
