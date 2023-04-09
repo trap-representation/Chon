@@ -1,3 +1,1 @@
-Chon is a POSIX compliant (POSIX.1-2017) implementation[^1] of the cat utility written entirely in the [Chlore Programming Language](https://github.com/trap-representation/Chlore).
-
-[^1]: At the moment, environment variables (`LANG`, `LC_ALL`, and others described by POSIX.1-2017) do not affect the execution of Chon.
+Chon is a POSIX compliant (POSIX.1-2017) implementation of the cat utility written entirely in the [Chlore Programming Language](https://github.com/trap-representation/Chlore).
