@@ -188,7 +188,7 @@ import "wchar.chloreh"
           over pushp "-" pushp strcmp call pushi 0 pushp read_stdin_nobuf jeq
           over pushp "-u" pushp strcmp call pushi 0 pushp duplicate_option jeq
           over loadc pushc '-' pushp invalid_option jeq
-          pushp check_next_arg jmp
+          pushp check_arg jmp
 
           :read_stdin_nobuf_and_quit
             pushi STDIN
@@ -200,8 +200,7 @@ import "wchar.chloreh"
             pushp "chon: (warning) duplicate option `-u'\n" pushp putstre call
             pushp read_next_arg_maybe_optend jmp
 
-          :check_next_arg
-            pushi 1 addi
+          :check_arg
             pushp getargc call over pushp read_stdin_nobuf jeq
             pushp read_arg_nobuf jmp
 
